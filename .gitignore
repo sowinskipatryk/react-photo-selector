@@ -21,3 +21,7 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+/src/assets/images/fullsize/*
+/src/assets/images/thumbnails/*
+/src/assets/images/to_thumbnails/*
