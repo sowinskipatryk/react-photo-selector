@@ -21,6 +21,9 @@ const IndexPage = () => {
         };
   });
 
+  const [hideLiked, setHideLiked] = useState(false);
+  const [hideDisliked, setHideDisliked] = useState(false);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const serializable = {
@@ -33,17 +36,17 @@ const IndexPage = () => {
     }
   }, [selections]);
 
-  const handleSelection = useCallback((index, type) => {
+  const handleSelection = useCallback((id, type) => {
     setSelections(prev => {
       const newSet = new Set(prev[type]);
       const oppositeType = type === 'liked' ? 'disliked' : 'liked';
       const oppositeSet = new Set(prev[oppositeType]);
 
-      if (newSet.has(index)) {
-        newSet.delete(index);
+      if (newSet.has(id)) {
+        newSet.delete(id);
       } else {
-        newSet.add(index);
-        oppositeSet.delete(index);
+        newSet.add(id);
+        oppositeSet.delete(id);
       }
 
       return {
@@ -54,25 +57,25 @@ const IndexPage = () => {
     });
   }, []);
 
-  const handleStarRating = useCallback((index, stars) => {
+  const handleStarRating = useCallback((id, stars) => {
     setSelections(prev => {
-      const currentRating = prev.ratings[index] || 0;
+      const currentRating = prev.ratings[id] || 0;
       const newRating = currentRating === stars ? 0 : stars;
-      const newRatings = { ...prev.ratings, [index]: newRating };
+      const newRatings = { ...prev.ratings, [id]: newRating };
       
       const newLiked = new Set(prev.liked);
       const newDisliked = new Set(prev.disliked);
 
       if (newRating === 0) {
-        newLiked.delete(index);
-        newDisliked.delete(index);
+        newLiked.delete(id);
+        newDisliked.delete(id);
       } else {
         if (newRating === 1) {
-          newDisliked.add(index);
-          newLiked.delete(index);
+          newDisliked.add(id);
+          newLiked.delete(id);
         } else if (newRating === 5) {
-          newLiked.add(index);
-          newDisliked.delete(index);
+          newLiked.add(id);
+          newDisliked.delete(id);
         }
       }
 
@@ -86,15 +89,14 @@ const IndexPage = () => {
   }, []);
 
   const renderPhoto = useCallback(({ photo, layout, wrapperStyle }) => {
-    const isLiked = selections.liked.has(layout.index);
-    const isDisliked = selections.disliked.has(layout.index);
-    const currentRating = (selections.ratings || {})[layout.index] || 0;
+    const isLiked = selections.liked.has(photo.id);
+    const isDisliked = selections.disliked.has(photo.id);
+    const currentRating = (selections.ratings || {})[photo.id] || 0;
 
     return (
       <div style={{
         ...wrapperStyle,
         position: 'relative',
-        transition: 'border-color 0.2s',
         boxSizing: 'border-box',
       }}>
         <PhotoView src={photo.fullSize}>
@@ -113,7 +115,7 @@ const IndexPage = () => {
                 'transparent'
               }`,
               filter: isDisliked ? 'grayscale(100%)' : 'none',
-              transition: 'opacity 0.2s, filter 0.2s'
+              transition: 'opacity 0.2s, filter 0.2s border-color 0.2s'
             }}
           />
         </PhotoView>
@@ -135,7 +137,7 @@ const IndexPage = () => {
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                handleSelection(layout.index, 'liked');
+                handleSelection(photo.id, 'liked');
               }}
               style={{
                 padding: '2px 8px',
@@ -150,7 +152,7 @@ const IndexPage = () => {
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                handleSelection(layout.index, 'disliked');
+                handleSelection(photo.id, 'disliked');
               }}
               style={{
                 padding: '2px 8px',
@@ -169,7 +171,7 @@ const IndexPage = () => {
                 key={star}
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleStarRating(layout.index, star);
+                  handleStarRating(photo.id, star);
                 }}
                 style={{
                   padding: '0 2px',
@@ -197,6 +199,9 @@ const IndexPage = () => {
             <ResponsiveImageGallery
               photosNumber={112}
               renderPhoto={renderPhoto}
+              hideLiked={hideLiked}
+              hideDisliked={hideDisliked}
+              selections={selections}
             />
           </div>
         </section>
@@ -217,23 +222,50 @@ const IndexPage = () => {
         transform: `scale(${selections.showSummary ? 1 : 0.95})`,
         zIndex: 2
       }}>
-        <button 
-          className={styles.summaryButton}
-          onClick={() => setSelections(prev => ({
-            ...prev,
-            showSummary: !prev.showSummary
-          }))}
-          style={{
-            padding: '8px 16px',
-            border: 'none',
-            borderRadius: 4,
-            transition: 'background-color 0.2s',
-            color: 'white',
-            cursor: 'pointer',
-          }}
-        >
-          {selections.showSummary ? 'Hide Summary' : 'Show Summary'}
-        </button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button 
+            onClick={() => setHideLiked(!hideLiked)}
+            style={{
+              padding: '8px 16px',
+              border: 'none',
+              borderRadius: 4,
+              backgroundColor: hideLiked ? '#4CAF50' : '#83d187',
+              color: 'white',
+              cursor: 'pointer',
+            }}
+          >
+            {hideLiked ? 'Show Liked' : 'Hide Liked'}
+          </button>
+          <button 
+            onClick={() => setHideDisliked(!hideDisliked)}
+            style={{
+              padding: '8px 16px',
+              border: 'none',
+              borderRadius: 4,
+              backgroundColor: hideDisliked ? '#F44336' : '#e7958f',
+              color: 'white',
+              cursor: 'pointer',
+            }}
+          >
+            {hideDisliked ? 'Show Disliked' : 'Hide Disliked'}
+          </button>
+          <button 
+            className={styles.summaryButton}
+            onClick={() => setSelections(prev => ({
+              ...prev,
+              showSummary: !prev.showSummary
+            }))}
+            style={{
+              padding: '8px 16px',
+              border: 'none',
+              borderRadius: 4,
+              color: 'white',
+              cursor: 'pointer',
+            }}
+          >
+            {selections.showSummary ? 'Hide Summary' : 'Show Summary'}
+          </button>
+        </div>
         
         {selections.showSummary && (
           <div style={{ marginTop: 16 }}>
